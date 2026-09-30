@@ -1,0 +1,28 @@
+{
+  "name": "antigravity-acp2api",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "OpenAI and Anthropic API adapters for the official Google Antigravity ACP server",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/cli.js serve",
+    "login": "node --env-file-if-exists=.env src/cli.js login",
+    "doctor": "node --env-file-if-exists=.env src/cli.js doctor",
+    "smoke:live": "node --env-file-if-exists=.env scripts/smoke-live.js",
+    "setup": "node scripts/setup.js",
+    "test": "node --test --test-concurrency=1 test/*.test.js",
+    "test:official": "node --test --test-concurrency=1 test/official.integration.js",
+    "check": "node scripts/check.js"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "yauzl": "^3.4.0"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.129.0",
+    "openai": "^7.25.0"
+  }
+}
