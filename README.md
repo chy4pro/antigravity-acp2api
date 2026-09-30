@@ -12,6 +12,48 @@ Antigravity's built-in execution tools are disabled. External function proposals
 
 Validation status: 16 gateway regression tests and 7 end-to-end checks using the real official ACP runtime with a local mock model service have passed. Real Google subscription login and inference remain unverified. See the [validation report](docs/validation.md) and [compatibility matrix](docs/compatibility.md), both currently in Chinese.
 
+## API feature comparison
+
+This table describes **this gateway's adapters**, not the full capabilities of the original provider APIs. OpenAI columns show the default **strict** mode. The Claude column shows the explicitly enabled **relaxed** adapter: **strict mode rejects the entire Claude Messages endpoint with HTTP 400**.
+
+**Legend:** ✅ supported · ⚠️ limited or approximate · ❌ unsupported / rejected.
+
+| Capability | OpenAI Chat Completions — strict | OpenAI Responses — strict | Claude Messages — relaxed only |
+| --- | --- | --- | --- |
+| Text responses | ✅ | ✅ | ✅ |
+| SSE text streaming | ✅ Incremental text | ✅ Incremental text | ✅ Incremental text |
+| Official SDK parsing | ✅ OpenAI SDK tested | ✅ OpenAI SDK tested | ✅ Anthropic SDK tested |
+| Commands as text, without executing them | ✅ | ✅ | ✅ |
+| Built-in command/file execution disabled | ✅ | ✅ | ✅ |
+| External function proposals and result round trips | ✅ `tool_calls` | ✅ `function_call` | ✅ `tool_use` |
+| Multiple tool calls | ⚠️ One call per response | ⚠️ One call per response | ⚠️ One call per response |
+| Tool arguments streamed token by token | ❌ Complete JSON in one delta | ❌ Complete JSON in one delta | ❌ Complete JSON in one delta |
+| `tool_choice: auto / none` | ✅ Fixed tool set per session | ✅ Fixed tool set per session | ✅ Fixed tool set per session |
+| Required / named tool choice | ❌ | ❌ | ❌ |
+| Parallel external tool delivery | ❌ Sequential delivery | ❌ Sequential delivery | ❌ Sequential delivery |
+| Inline base64 images | ✅ No `detail` option | ✅ No `detail` option | ✅ |
+| Remote image URLs, files, audio, video | ❌ | ❌ | ❌ |
+| Conversation continuation | ⚠️ Exact history in a live session | ⚠️ Exact history or latest `previous_response_id` | ⚠️ Exact history in a live session |
+| Importing external history | ❌ | ❌ | ⚠️ Text transcript only |
+| Editing/forking history or recovering pending calls after restart | ❌ | ❌ | ❌ |
+| Model selection | ✅ Actual Antigravity catalog | ✅ Actual Antigravity catalog | ✅ Actual Antigravity catalog |
+| Native system/developer instruction priority | ❌ | ❌ | ❌ User prompt text only |
+| Native generation token budget (`max_tokens`, etc.) | ❌ Parameter rejected | ❌ Parameter rejected | ❌ Visible UTF-8 byte cap only |
+| Exact token usage | ❌ `usage` omitted | ❌ `usage: null` | ⚠️ Visible-byte estimate, not billing usage |
+| `temperature`, `top_p`, penalties, `seed` | ❌ | ❌ | ❌ |
+| `stop` / `stop_sequences` | ❌ | ❌ | ❌ |
+| JSON/Schema-constrained generation | ❌ | ❌ | ❌ |
+| Log probabilities, multiple candidates, prediction | ❌ | ❌ | ❌ |
+| Thinking/reasoning controls and signatures | ❌ | ❌ | ❌ |
+| Prompt caching / `cache_control` | ❌ | ❌ | ❌ |
+| Provider-hosted search and execution tools | ❌ | ❌ | ❌ |
+| Store and retrieve response objects | ❌ | ⚠️ Bounded in-memory cache | ❌ |
+| Background jobs / WebSocket transport | ❌ | ❌ | ❌ |
+
+Tool schemas are checked when the gateway receives a proposed call; this does **not** enable model-side constrained decoding. Text streams as ACP chunks arrive, while a tool's arguments become available only when its real MCP call arrives. Relaxed mode does not restore native system priority, token budgets, or exact usage.
+
+See [Tools and sessions](#tools-and-sessions), [Explicit relaxed mode](#explicit-relaxed-mode), and the [detailed compatibility notes](docs/compatibility.md) (Chinese).
+
 ## Quick start
 
 Requires Node.js 22 or later. The installer supports Linux and macOS on arm64 and x64. Runtime validation has been performed on Linux arm64; Windows has not been validated.

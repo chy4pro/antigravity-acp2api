@@ -12,6 +12,48 @@
 
 当前状态：16 项网关回归测试、7 项真实官方 ACP 运行时与本地模拟模型服务的端到端检查通过。真实 Google 订阅尚未登录和实测。详见 [验证报告](docs/validation.md) 与 [兼容性表](docs/compatibility.md)。
 
+## API 功能对比
+
+下表比较的是**本项目的接口适配能力**，不是各厂商原生 API 的全部能力。OpenAI 两列对应默认的**严格模式**；Claude 一列对应显式开启的 **relaxed 近似模式**。**严格模式会对整个 Claude Messages 接口返回 HTTP 400。**
+
+**图例：** ✅ 支持 · ⚠️ 受限或近似支持 · ❌ 不支持／明确拒绝。
+
+| 功能 | OpenAI Chat Completions：严格模式 | OpenAI Responses：严格模式 | Claude Messages：仅近似模式 |
+| --- | --- | --- | --- |
+| 普通文字响应 | ✅ | ✅ | ✅ |
+| SSE 文字流式输出 | ✅ 实时增量 | ✅ 实时增量 | ✅ 实时增量 |
+| 官方 SDK 解析 | ✅ 已测 OpenAI SDK | ✅ 已测 OpenAI SDK | ✅ 已测 Anthropic SDK |
+| 只输出命令文字，不执行 | ✅ | ✅ | ✅ |
+| 关闭内置命令／文件执行工具 | ✅ | ✅ | ✅ |
+| 外部函数提案与结果回传 | ✅ `tool_calls` | ✅ `function_call` | ✅ `tool_use` |
+| 多个工具调用 | ⚠️ 每个响应只交出一个 | ⚠️ 每个响应只交出一个 | ⚠️ 每个响应只交出一个 |
+| 工具参数逐 token 流式输出 | ❌ 完整 JSON 一次交付 | ❌ 完整 JSON 一次交付 | ❌ 完整 JSON 一次交付 |
+| `tool_choice: auto / none` | ✅ 会话内工具集合固定 | ✅ 会话内工具集合固定 | ✅ 会话内工具集合固定 |
+| 强制调用／指定工具调用 | ❌ | ❌ | ❌ |
+| 并行交付外部工具调用 | ❌ 顺序交付 | ❌ 顺序交付 | ❌ 顺序交付 |
+| 行内 base64 图片 | ✅ 不支持 `detail` | ✅ 不支持 `detail` | ✅ |
+| 远程图片 URL、文件、音频、视频 | ❌ | ❌ | ❌ |
+| 连续对话 | ⚠️ 活跃会话内精确匹配历史 | ⚠️ 完整历史或最新 `previous_response_id` | ⚠️ 活跃会话内精确匹配历史 |
+| 导入外部历史 | ❌ | ❌ | ⚠️ 仅作为文本转录 |
+| 编辑／分叉历史、重启后恢复挂起调用 | ❌ | ❌ | ❌ |
+| 模型选择 | ✅ Antigravity 实际模型目录 | ✅ Antigravity 实际模型目录 | ✅ Antigravity 实际模型目录 |
+| 原生 system／developer 指令优先级 | ❌ | ❌ | ❌ 只能加入用户提示文本 |
+| 原生生成 token 预算（`max_tokens` 等） | ❌ 拒绝参数 | ❌ 拒绝参数 | ❌ 只能限制可见输出 UTF-8 字节数 |
+| 精确 token 用量 | ❌ 省略 `usage` | ❌ `usage: null` | ⚠️ 可见字节估算，不能用于计费 |
+| `temperature`、`top_p`、penalties、`seed` | ❌ | ❌ | ❌ |
+| `stop` / `stop_sequences` | ❌ | ❌ | ❌ |
+| JSON／Schema 约束生成 | ❌ | ❌ | ❌ |
+| logprobs、多候选、预测输出 | ❌ | ❌ | ❌ |
+| thinking／reasoning 控制及签名 | ❌ | ❌ | ❌ |
+| 提示缓存／`cache_control` | ❌ | ❌ | ❌ |
+| 厂商托管搜索、执行工具 | ❌ | ❌ | ❌ |
+| 保存与获取响应对象 | ❌ | ⚠️ 有界的进程内存缓存 | ❌ |
+| 后台任务／WebSocket 传输 | ❌ | ❌ | ❌ |
+
+网关会在收到工具提案时校验参数 schema，这**不等于**模型端的约束解码。文字随着 ACP 内容块到达而流式返回；工具参数要等真实 MCP 调用到达后才能交付。近似模式也不会恢复原生 system 优先级、生成 token 预算或精确用量。
+
+详细规则见 [工具与会话规则](#工具与会话规则)、[显式近似模式](#显式近似模式) 和 [完整兼容性说明](docs/compatibility.md)。
+
 ## 启动
 
 需要 Node.js 22 或更新版本。自动安装脚本支持 Linux / macOS 的 arm64、x64；本次实际验证环境为 Linux arm64。Windows 暂未验证。
